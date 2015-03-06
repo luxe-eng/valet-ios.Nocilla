@@ -31,6 +31,11 @@
     [request setHTTPMethod:method];
     LSStubResponse *stubbedResponse = [[LSNocilla sharedInstance] responseForRequest:request];
     
+    // Set any cookies
+    NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+    [cookieStorage setCookies:[NSHTTPCookie cookiesWithResponseHeaderFields:stubbedResponse.headers forURL:request.URL]
+                       forURL:request.URL mainDocumentURL:request.URL];
+    
     if (stubbedResponse.shouldFail && errorBlock) {
         NSError *error = stubbedResponse.error;
         errorBlock(error, 0, error.code, error.localizedDescription);
