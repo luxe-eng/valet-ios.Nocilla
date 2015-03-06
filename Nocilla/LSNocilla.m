@@ -1,5 +1,5 @@
 #import "LSNocilla.h"
-#import "LSNSURLHook.h"
+#import "LSServerConnectionHook.h"
 #import "LSStubRequest.h"
 #import "LSHTTPRequestDSLRepresentation.h"
 #import "LSASIHTTPRequestHook.h"
@@ -34,11 +34,7 @@ static LSNocilla *sharedInstace = nil;
     if (self) {
         _mutableRequests = [NSMutableArray array];
         _hooks = [NSMutableArray array];
-        [self registerHook:[[LSNSURLHook alloc] init]];
-        if (NSClassFromString(@"NSURLSession") != nil) {
-            [self registerHook:[[LSNSURLSessionHook alloc] init]];
-        }
-        [self registerHook:[[LSASIHTTPRequestHook alloc] init]];
+        [self registerHook:[[LSServerConnectionHook alloc] init]];
     }
     return self;
 }
