@@ -36,13 +36,12 @@
     [cookieStorage setCookies:[NSHTTPCookie cookiesWithResponseHeaderFields:stubbedResponse.headers forURL:request.URL]
                        forURL:request.URL mainDocumentURL:request.URL];
     
-    if (stubbedResponse.shouldFail && errorBlock) {
+    if ((stubbedResponse.shouldFail || stubbedResponse.statusCode >= 400) && errorBlock) {
         NSError *error = stubbedResponse.error;
         errorBlock(error, 0, error.code, error.localizedDescription);
     } else {
         if (completionBlock) {
             NSError *error;
-            
             id response = [NSJSONSerialization JSONObjectWithData:stubbedResponse.body options:0 error:&error];
             if (error) {
                 [NSException raise:NSInternalInconsistencyException format:@"******* TESTING ****** Error parsing the JSON body.\nError: %@", error];
