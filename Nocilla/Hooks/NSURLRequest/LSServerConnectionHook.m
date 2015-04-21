@@ -37,8 +37,32 @@
                        forURL:request.URL mainDocumentURL:request.URL];
     
     if ((stubbedResponse.shouldFail || stubbedResponse.statusCode >= 400) && errorBlock) {
-        NSError *error = stubbedResponse.error;
-        errorBlock(error, 0, error.code, error.localizedDescription);
+        NSError *error = nil;
+        
+        Class serverConnection = NSClassFromString(@"ServerConnection");
+        SEL callErrorBlockSelector = NSSelectorFromString(@"callErrorBlock:withError:withOperation:");
+        
+        // Create an operation w/ response & responseObject
+        Class requestOperationClass = NSClassFromString(@"AFHTTPRequestOperation");
+        SEL initWithRequestSelector = NSSelectorFromString(@"initWithRequest:");
+        id operation = [[requestOperationClass alloc] performSelector:initWithRequestSelector withObject:request];
+        
+        Class responseClass = NSClassFromString(@"NSHTTPURLResponse");
+        SEL initWithSelector = NSSelectorFromString(@"initWithURL:statusCode:HTTPVersion:headerFields:");
+        id response = objc_msgSend([responseClass alloc], initWithSelector, url, stubbedResponse.statusCode, @"HTTP/1.1", stubbedResponse.headers);
+        object_setIvar(operation, class_getInstanceVariable(requestOperationClass, [@"_response" UTF8String]), response);
+        
+        NSError *jsonError;
+        id responseObject = [NSJSONSerialization JSONObjectWithData:stubbedResponse.body options:0 error:&jsonError];
+        if (jsonError) {
+            [NSException raise:NSInternalInconsistencyException format:@"******* TESTING ****** Error parsing the JSON body.\nError: %@", error];
+            return;
+        }
+        NSDictionary *userInfo = @{ NSLocalizedDescriptionKey: [responseObject valueForKey:@"message"] };
+        error = [NSError errorWithDomain:@"testing.luxeValet.com" code:[[responseObject valueForKey:@"code"] integerValue] userInfo:userInfo];
+        object_setIvar(operation, class_getInstanceVariable(requestOperationClass, [@"_responseObject" UTF8String]), responseObject);
+        
+        objc_msgSend(self, callErrorBlockSelector, errorBlock, error, operation);
     } else {
         if (completionBlock) {
             NSError *error;
@@ -50,7 +74,7 @@
         }
     }
 }
-    
+
 + (NSString *)methodNameForType:(NSInteger)type {
     if (type == 0) return @"GET";
     if (type == 1) return @"PUT";
