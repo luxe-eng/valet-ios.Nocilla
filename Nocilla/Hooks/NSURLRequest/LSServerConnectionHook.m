@@ -53,14 +53,19 @@
         object_setIvar(operation, class_getInstanceVariable(requestOperationClass, [@"_response" UTF8String]), response);
         
         NSError *jsonError;
-        id responseObject = [NSJSONSerialization JSONObjectWithData:stubbedResponse.body options:0 error:&jsonError];
-        if (jsonError) {
-            [NSException raise:NSInternalInconsistencyException format:@"******* TESTING ****** Error parsing the JSON body.\nError: %@", error];
-            return;
+        id responseObject;
+        if (stubbedResponse.body.length != 0) {
+            responseObject = [NSJSONSerialization JSONObjectWithData:stubbedResponse.body options:0 error:&jsonError];
+            if (jsonError) {
+                [NSException raise:NSInternalInconsistencyException format:@"******* TESTING ****** Error parsing the JSON body.\nError: %@", error];
+                return;
+            }
         }
-        NSDictionary *userInfo = @{ NSLocalizedDescriptionKey: [responseObject valueForKey:@"message"] };
-        error = [NSError errorWithDomain:@"testing.luxeValet.com" code:[[responseObject valueForKey:@"code"] integerValue] userInfo:userInfo];
-        object_setIvar(operation, class_getInstanceVariable(requestOperationClass, [@"_responseObject" UTF8String]), responseObject);
+        if (responseObject) {
+            NSDictionary *userInfo = @{ NSLocalizedDescriptionKey: [responseObject valueForKey:@"message"] };
+            error = [NSError errorWithDomain:@"testing.luxeValet.com" code:[[responseObject valueForKey:@"code"] integerValue] userInfo:userInfo];
+            object_setIvar(operation, class_getInstanceVariable(requestOperationClass, [@"_responseObject" UTF8String]), responseObject);
+        }
         
         objc_msgSend(self, callErrorBlockSelector, errorBlock, error, operation);
     } else {
