@@ -1,7 +1,7 @@
 #import "LSServerConnectionHook.h"
 #import "LSNocilla.h"
 #import "LSStubRequest.h"
-#import <objc/runtime.h>
+#import <objc/message.h>
 
 @implementation LSServerConnectionHook
 
